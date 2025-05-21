@@ -2,6 +2,7 @@
 name = "solid2-utils"
 version = "0.1.0"
 description = "Helper packages for solidpython2"
+license = "BSD-2-Clause"
 readme = "README.md"
 authors = [
     { name = "Gerard Choinka", email = "gerard.choinka+github@gmail.com" }
@@ -21,4 +22,5 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "pytest>=8.3.5",
+    "pytest-icdiff>=0.9",
 ]
