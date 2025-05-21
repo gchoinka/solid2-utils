@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import copy
 import itertools
 from dataclasses import dataclass
 from enum import Enum
 from typing import List, Tuple, Sequence, Dict, Any, Set
 
-from solid2 import P3, cube
+from solid2 import P2, P3, P4
 from solid2.core.object_base import OpenSCADObject
 
-XYZ = P3 | Sequence[float]
-zero_cube: OpenSCADObject = cube((0, 0, 0))
+XYZ = P4 | P3 | P2 | Sequence[float | int] | int | float
 
 
 def mod_p3(v: XYZ, x: float | int | None = None, y: float | int | None = None, z: float | int | None = None,
@@ -34,12 +34,6 @@ def mod_p3(v: XYZ, x: float | int | None = None, y: float | int | None = None, z
     return new_v[0], new_v[1], new_v[2]
 
 
-class Axis(Enum):
-    X = 0
-    Y = 1
-    Z = 2
-
-
 class Opt(Enum):
     Disable = 0
     Enable = 1
@@ -62,12 +56,11 @@ class Ro:
 
 @dataclass
 class Mi:
-    axis: Axis = Axis.X
+    axis: Tuple[bool, bool, bool] = (False, False, False)
 
 
 class Mod:
-    def __init__(self, openscad_object: OpenSCADObject | None = None, opt: Opt = Opt.Enable):
-        self._openscad_object = openscad_object
+    def __init__(self, opt: Opt = Opt.Enable):
         self._actions: List[Tr | Ro | Mi | Sc] = list()
         self._opt = opt
 
@@ -90,7 +83,7 @@ class Mod:
                 self.m(**args)
         return self
 
-    def s(self, *factors: XYZ | float | int, x: float | None = None, y: float | None = None,
+    def s(self, *factors: XYZ, x: float | None = None, y: float | None = None,
           z: float | None = None, opt: Opt = Opt.Enable):
         if opt is not None and opt == Opt.Disable:
             return self
@@ -101,24 +94,27 @@ class Mod:
         elif any(c is not None for c in (x, y, z)):
             self._actions.append(Sc([c if c is not None else 1. for c in (x, y, z)]))
         else:
-            raise ValueError("Either factors has to be non None or x,y,z have to be non None")
+            raise ValueError("Either factors has to be non None or x,y,z have to be not None")
         return self
 
-    def t(self, *coordinates: XYZ | float | int, x: float | None = None, y: float | None = None,
+    def t(self, *coordinates: XYZ | float, x: float | None = None, y: float | None = None,
           z: float | None = None, opt: Opt = Opt.Enable) -> Mod:
         if opt is not None and opt == Opt.Disable:
             return self
         if len(coordinates) == 1 and isinstance(coordinates[0], tuple | list):
             self._actions.append(Tr(coordinates[0]))
-        elif len(coordinates) == 3 and all(isinstance(c, float | int) for c in coordinates):
-            self._actions.append(Tr((coordinates[0], coordinates[1], coordinates[2])))
+        elif len(coordinates) > 0 and all(isinstance(c, float | int) for c in coordinates):
+            mat = [0., 0., 0.]
+            for i in range(len(coordinates)):
+                mat[i] = coordinates[i]
+            self._actions.append(Tr(mat))
         elif any(c is not None for c in (x, y, z)):
             self._actions.append(Tr([c if c is not None else 0. for c in (x, y, z)]))
         else:
-            raise ValueError("Either coordinates has to be non None or x,y,z have to be non None")
+            raise ValueError("Either coordinates has to be non None or x,y,z have to be not None")
         return self
 
-    def r(self, *angles: XYZ | float | int, x: float | None = None, y: float | None = None,
+    def r(self, *angles: XYZ, x: float | None = None, y: float | None = None,
           z: float | None = None, opt: Opt = Opt.Enable) -> Mod:
         if opt is not None and opt == Opt.Disable:
             return self
@@ -129,7 +125,7 @@ class Mod:
         elif any(c is not None for c in (x, y, z)):
             self._actions.append(Ro([c if c is not None else 0. for c in (x, y, z)]))
         else:
-            raise ValueError("Either angles has to be non None or x,y,z have to be non None")
+            raise ValueError("Either angles has to be non None or x,y,z have to be not None")
         return self
 
     def tx(self, x: float | int, opt: Opt = Opt.Enable) -> Mod:
@@ -159,14 +155,9 @@ class Mod:
     def sz(self, z: float | int, opt: Opt = Opt.Enable) -> Mod:
         return self.s(z=z, opt=opt)
 
-    def m(self, x: bool | None = None, y: bool | None = None, z: bool | None = None, opt: Opt = Opt.Enable) -> Mod:
+    def m(self, x: bool = False, y: bool = False, z: bool = False, opt: Opt = Opt.Enable) -> Mod:
         if opt == Opt.Enable:
-            if x is not None and x:
-                self._actions.append(Mi(Axis.X))
-            if y is not None and y:
-                self._actions.append(Mi(Axis.Y))
-            if z is not None and z:
-                self._actions.append(Mi(Axis.Z))
+            self._actions.append(Mi((x, y, z)))
         return self
 
     def mx(self, opt: Opt = Opt.Enable) -> Mod:
@@ -178,31 +169,23 @@ class Mod:
     def mz(self, opt: Opt = Opt.Enable) -> Mod:
         return self.m(z=True, opt=opt)
 
-    def __call__(self, *openscad_objects: OpenSCADObject) -> OpenSCADObject | Sequence[OpenSCADObject]:
-        if len(openscad_objects) == 0 and self._openscad_object is None:
-            raise ValueError(
-                "This call need an OpenScad Object set in the __init__ of Mod or given as argument to the __call__ method")
-        if len(openscad_objects) == 0 and self._openscad_object is not None:
-            openscad_objects = (self._openscad_object,)
+    def __call__(self, openscad_object: OpenSCADObject, *openscad_objects: OpenSCADObject) -> OpenSCADObject | Sequence[
+        OpenSCADObject]:
         result: List[OpenSCADObject] = list()
-        for obj in openscad_objects:
-            if self._opt == Opt.Enable:
-                for action in self._actions:
-                    if isinstance(action, Tr):
-                        obj = obj.translate(action.coordinates)
-                    elif isinstance(action, Ro):
-                        obj = obj.rotate(action.angles)
-                    elif isinstance(action, Sc):
-                        obj = obj.scale(action.factor)
-                    elif isinstance(action, Mi):
-                        if action.axis == Axis.X:
-                            obj = obj.mirrorX()
-                        if action.axis == Axis.Y:
-                            obj = obj.mirrorY()
-                        if action.axis == Axis.Z:
-                            obj = obj.mirrorZ()
-                    else:
-                        raise ValueError("Unexpected type for action")
+        for obj in [openscad_object, *openscad_objects]:
+            if self._opt == Opt.Disable:
+                continue
+            for action in self._actions:
+                if isinstance(action, Tr):
+                    obj = obj.translate(action.coordinates)
+                elif isinstance(action, Ro):
+                    obj = obj.rotate(action.angles)
+                elif isinstance(action, Sc):
+                    obj = obj.scale(action.factor)
+                elif isinstance(action, Mi):
+                    obj = obj.mirror(action.axis)
+                else:
+                    raise ValueError("Unexpected type for action")
             result.append(obj)
         if len(result) == 1:
             return result[0]
@@ -214,8 +197,31 @@ class Mod:
         return self.__call__()
 
     def __add__(self, other: Mod) -> Mod:
+        new_instance = copy.deepcopy(self)
+        new_instance += other
+        return new_instance
+
+    def __iadd__(self, other: Mod) -> Mod:
         self._actions.extend(other._actions)
         return self
+
+
+def t(*coordinates: XYZ, x: float | None = None, y: float | None = None,
+      z: float | None = None, opt: Opt = Opt.Enable) -> Mod:
+    m = Mod()
+    return m.t(*coordinates, x=x, y=y, z=z, opt=opt)
+
+
+def r(*angles: XYZ, x: float | None = None, y: float | None = None,
+      z: float | None = None, opt: Opt = Opt.Enable) -> Mod:
+    m = Mod()
+    return m.r(*angles, x=x, y=y, z=z, opt=opt)
+
+
+def s(*factors: XYZ, x: float | None = None, y: float | None = None,
+      z: float | None = None, opt: Opt = Opt.Enable) -> Mod:
+    m = Mod()
+    return m.s(*factors, x=x, y=y, z=z, opt=opt)
 
 
 class LocatedObj:
