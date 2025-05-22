@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import itertools
 from dataclasses import dataclass
-from enum import Enum
 from typing import List, Tuple, Sequence, Dict, Any, Set
 
 from solid2 import P2, P3, P4
@@ -32,18 +31,6 @@ def mod_p3(v: XYZ, x: float | int | None = None, y: float | int | None = None, z
         new_v[i] *= mul_values[i]
 
     return new_v[0], new_v[1], new_v[2]
-
-
-class Opt(Enum):
-    Disable = 0
-    Enable = 1
-
-    @staticmethod
-    def from_bool(value: Opt | bool) -> Opt:
-        if isinstance(value, bool):
-            return Opt.Enable if value else Opt.Disable
-        else:
-            return value
 
 
 @dataclass
@@ -90,9 +77,7 @@ class Mod:
         return self
 
     def s(self, *factors: XYZ, x: float | None = None, y: float | None = None,
-          z: float | None = None, enable: Opt | bool = Opt.Enable):
-        if Opt.from_bool(enable) == Opt.Disable:
-            return self
+          z: float | None = None):
         if len(factors) == 1 and isinstance(factors[0], tuple | list):
             self._actions.append(_Sc(factors[0]))
         elif len(factors) == 3 and all(isinstance(c, float | int) for c in factors):
@@ -104,9 +89,7 @@ class Mod:
         return self
 
     def t(self, *coordinates: XYZ | float, x: float | None = None, y: float | None = None,
-          z: float | None = None, enable: Opt | bool = Opt.Enable) -> Mod:
-        if Opt.from_bool(enable) == Opt.Disable:
-            return self
+          z: float | None = None) -> Mod:
         if len(coordinates) == 1 and isinstance(coordinates[0], tuple | list):
             self._actions.append(_Tr(coordinates[0]))
         elif len(coordinates) > 0 and all(isinstance(c, float | int) for c in coordinates):
@@ -121,9 +104,7 @@ class Mod:
         return self
 
     def r(self, *angles: XYZ, x: float | None = None, y: float | None = None,
-          z: float | None = None, enable: Opt | bool = Opt.Enable) -> Mod:
-        if Opt.from_bool(enable) == Opt.Disable:
-            return self
+          z: float | None = None) -> Mod:
         if len(angles) == 1 and isinstance(angles[0], tuple | list):
             self._actions.append(_Ro(angles[0]))
         elif len(angles) == 3 and all(isinstance(c, float | int) for c in angles):
@@ -134,66 +115,61 @@ class Mod:
             raise ValueError("Either angles has to be non None or x,y,z have to be not None")
         return self
 
-    def tx(self, x: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.t(x=x, enable=enable)
+    def tx(self, x: float | int) -> Mod:
+        return self.t(x=x)
 
-    def ty(self, y: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.t(y=y, enable=enable)
+    def ty(self, y: float | int) -> Mod:
+        return self.t(y=y)
 
-    def tz(self, z: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.t(z=z, enable=enable)
+    def tz(self, z: float | int) -> Mod:
+        return self.t(z=z)
 
-    def rx(self, x: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.r(x=x, enable=enable)
+    def rx(self, x: float | int) -> Mod:
+        return self.r(x=x)
 
-    def ry(self, y: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.r(y=y, enable=enable)
+    def ry(self, y: float | int) -> Mod:
+        return self.r(y=y)
 
-    def rz(self, z: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.r(z=z, enable=enable)
+    def rz(self, z: float | int) -> Mod:
+        return self.r(z=z)
 
-    def sx(self, x: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.s(x=x, enable=enable)
+    def sx(self, x: float | int) -> Mod:
+        return self.s(x=x)
 
-    def sy(self, y: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.s(y=y, enable=enable)
+    def sy(self, y: float | int) -> Mod:
+        return self.s(y=y)
 
-    def sz(self, z: float | int, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.s(z=z, enable=enable)
+    def sz(self, z: float | int) -> Mod:
+        return self.s(z=z)
 
-    def m(self, x: bool = False, y: bool = False, z: bool = False, enable: Opt | bool = Opt.Enable) -> Mod:
-        if Opt.from_bool(enable) == Opt.Disable:
-            return self
+    def m(self, x: bool = False, y: bool = False, z: bool = False) -> Mod:
         self._actions.append(_Mi((x, y, z)))
         return self
 
-    def mx(self, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.m(x=True, enable=enable)
+    def mx(self) -> Mod:
+        return self.m(x=True)
 
-    def my(self, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.m(y=True, enable=enable)
+    def my(self) -> Mod:
+        return self.m(y=True)
 
-    def mz(self, enable: Opt | bool = Opt.Enable) -> Mod:
-        return self.m(z=True, enable=enable)
+    def mz(self) -> Mod:
+        return self.m(z=True)
 
-    def __call__(self, openscad_object: OpenSCADObject, *openscad_objects: OpenSCADObject,
-                 enable: Opt | bool = Opt.Enable) -> OpenSCADObject | Sequence[
+    def __call__(self, openscad_object: OpenSCADObject, *openscad_objects: OpenSCADObject) -> OpenSCADObject | Sequence[
         OpenSCADObject]:
         result: List[OpenSCADObject] = list()
-        enable = Opt.from_bool(enable)
         for obj in [openscad_object, *openscad_objects]:
-            if enable == Opt.Enable:
-                for action in self._actions:
-                    if isinstance(action, _Tr):
-                        obj = obj.translate(action.coordinates)
-                    elif isinstance(action, _Ro):
-                        obj = obj.rotate(action.angles)
-                    elif isinstance(action, _Sc):
-                        obj = obj.scale(action.factor)
-                    elif isinstance(action, _Mi):
-                        obj = obj.mirror(action.axis)
-                    else:
-                        raise ValueError("Unexpected type for action")
+            for action in self._actions:
+                if isinstance(action, _Tr):
+                    obj = obj.translate(action.coordinates)
+                elif isinstance(action, _Ro):
+                    obj = obj.rotate(action.angles)
+                elif isinstance(action, _Sc):
+                    obj = obj.scale(action.factor)
+                elif isinstance(action, _Mi):
+                    obj = obj.mirror(action.axis)
+                else:
+                    raise ValueError("Unexpected type for action")
             result.append(obj)
         if len(result) == 1:
             return result[0]
@@ -211,26 +187,26 @@ class Mod:
 
 
 def t(*coordinates: XYZ, x: float | None = None, y: float | None = None,
-      z: float | None = None, enable: Opt | bool = Opt.Enable) -> Mod:
+      z: float | None = None) -> Mod:
     m = Mod()
-    return m.t(*coordinates, x=x, y=y, z=z, enable=enable)
+    return m.t(*coordinates, x=x, y=y, z=z)
 
 
 def r(*angles: XYZ, x: float | None = None, y: float | None = None,
-      z: float | None = None, enable: Opt | bool = Opt.Enable) -> Mod:
+      z: float | None = None) -> Mod:
     m = Mod()
-    return m.r(*angles, x=x, y=y, z=z, enable=enable)
+    return m.r(*angles, x=x, y=y, z=z)
 
 
 def s(*factors: XYZ, x: float | None = None, y: float | None = None,
-      z: float | None = None, enable: Opt | bool = Opt.Enable) -> Mod:
+      z: float | None = None) -> Mod:
     m = Mod()
-    return m.s(*factors, x=x, y=y, z=z, enable=enable)
+    return m.s(*factors, x=x, y=y, z=z)
 
 
-def m(x: bool = False, y: bool = False, z: bool = False, enable: Opt | bool = Opt.Enable) -> Mod:
+def m(x: bool = False, y: bool = False, z: bool = False) -> Mod:
     m = Mod()
-    return m.m(x=x, y=y, z=z, enable=enable)
+    return m.m(x=x, y=y, z=z)
 
 
 class LocatedObj:

@@ -3,7 +3,8 @@ from typing import Dict, List
 
 from solid2 import cube, translate
 from solid2.core.object_base import OpenSCADObject
-from solid2_utils.mod import t, Opt, Mod
+
+from solid2_utils.mod import t, Mod
 
 
 def convert_to_scad(result: Dict[str, OpenSCADObject]) -> Dict[str, List[str]]:
@@ -81,25 +82,29 @@ def test_enable_disable():
     c: OpenSCADObject = cube([5., 5., 5.])
 
     new_pos = t(z=5).r(z=45)
+    none_pos = Mod()
 
+    enable = False
     result: Dict[str, OpenSCADObject] = dict()
 
     result["no_mod"] = c
-    result["call_false"] = new_pos(c, enable=False)
-    result["call_disable"] = new_pos(c, enable=Opt.Disable)
+    p = new_pos if enable else none_pos
+    result["call_false"] = p(c)
+    result["call_disable"] = p(c)
 
     as_scad_reverse = convert_to_scad(result)
 
     for a, b in itertools.pairwise(as_scad_reverse.keys()):
         assert a == b, f"a is {','.join(as_scad_reverse[a])}; b is {','.join(as_scad_reverse[b])}"
 
+    enable = True
+    p = new_pos if enable else none_pos
     result["call_default_enable"] = new_pos(c)
-    result["call_true"] = new_pos(c, enable=True)
-    result["call_enable"] = new_pos(c, enable=Opt.Enable)
+    result["call_true"] = p(c)
 
     as_scad: Dict[str, str] = {k: v.as_scad() for k, v in result.items()}
 
-    for key in ("call_default_enable", "call_true", "call_enable"):
+    for key in ("call_default_enable", "call_true"):
         assert as_scad["no_mod"] != as_scad[key]
 
     for key in ("no_mod", "call_false", "call_disable"):
