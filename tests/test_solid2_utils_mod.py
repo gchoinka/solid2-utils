@@ -3,12 +3,10 @@ from typing import Dict, List
 
 from solid2 import cube, translate
 from solid2.core.object_base import OpenSCADObject
-
-from solid2_utils import Mod
-from solid2_utils.mod import t, s, r, Opt
+from solid2_utils.mod import t, Opt, Mod
 
 
-def assert_all_same(result: Dict[str, OpenSCADObject]) -> Dict[str, List[str]]:
+def convert_to_scad(result: Dict[str, OpenSCADObject]) -> Dict[str, List[str]]:
     as_scad: Dict[str, str] = {k: v.as_scad() for k, v in result.items()}
 
     as_scad_reverse: Dict[str, List[str]] = dict()
@@ -28,8 +26,8 @@ def test_mod_single():
     result["mod_do"] = Mod().do(tx=10.)(c)
     result["mod_t_x_0"] = Mod().t(x=10.)(c)
     result["mod_t_x_1"] = Mod().t(10.)(c)
-    result["mod_t_x_2"] = Mod().t(10.,0.)(c)
-    result["mod_t_x_3"] = Mod().t(10.,0.,0.)(c)
+    result["mod_t_x_2"] = Mod().t(10., 0.)(c)
+    result["mod_t_x_3"] = Mod().t(10., 0., 0.)(c)
     result["mod_t_xyz_0"] = Mod().t(x=10., y=0., z=0.)(c)
     result["mod_t_xyz_1"] = Mod().t(x=10., y=0.)(c)
     result["mod_t_xyz_2"] = Mod().t(x=10.)(c)
@@ -39,7 +37,7 @@ def test_mod_single():
     result["mod_t_xyz_6"] = t(x=10.)(c)
     result["mod_t_xyz_7"] = t(x=10.)(c)
 
-    as_scad_reverse = assert_all_same(result)
+    as_scad_reverse = convert_to_scad(result)
 
     for a, b in itertools.pairwise(as_scad_reverse.keys()):
         assert a == b, f"a is {','.join(as_scad_reverse[a])}; b is {','.join(as_scad_reverse[b])}"
@@ -60,7 +58,7 @@ def test_mod():
     pos = t(x=10.).tx(10.).ty(-5.)
     result["mod_save_pos"] = pos(c)
 
-    as_scad_reverse = assert_all_same(result)
+    as_scad_reverse = convert_to_scad(result)
 
     for a, b in itertools.pairwise(as_scad_reverse.keys()):
         assert a == b, f"a is {','.join(as_scad_reverse[a])}; b is {','.join(as_scad_reverse[b])}"
@@ -73,7 +71,7 @@ def test_translate_scale_mirror():
 
     result["mod"] = t(x=10.).s(10., 1., 1.).mx()(c)
 
-    as_scad_reverse = assert_all_same(result)
+    as_scad_reverse = convert_to_scad(result)
 
     for a, b in itertools.pairwise(as_scad_reverse.keys()):
         assert a == b, f"a is {','.join(as_scad_reverse[a])}; b is {','.join(as_scad_reverse[b])}"
@@ -84,19 +82,16 @@ def test_enable_disable():
 
     new_pos = t(z=5).r(z=45)
 
-
-
     result: Dict[str, OpenSCADObject] = dict()
 
     result["no_mod"] = c
     result["call_false"] = new_pos(c, enable=False)
     result["call_disable"] = new_pos(c, enable=Opt.Disable)
 
-    as_scad_reverse = assert_all_same(result)
+    as_scad_reverse = convert_to_scad(result)
 
     for a, b in itertools.pairwise(as_scad_reverse.keys()):
         assert a == b, f"a is {','.join(as_scad_reverse[a])}; b is {','.join(as_scad_reverse[b])}"
-
 
     result["call_default_enable"] = new_pos(c)
     result["call_true"] = new_pos(c, enable=True)
@@ -107,10 +102,9 @@ def test_enable_disable():
     for key in ("call_default_enable", "call_true", "call_enable"):
         assert as_scad["no_mod"] != as_scad[key]
 
-
     for key in ("no_mod", "call_false", "call_disable"):
         result.pop(key, None)
 
-    as_scad_reverse = assert_all_same(result)
+    as_scad_reverse = convert_to_scad(result)
     for a, b in itertools.pairwise(as_scad_reverse.keys()):
         assert a == b, f"a is {','.join(as_scad_reverse[a])}; b is {','.join(as_scad_reverse[b])}"
