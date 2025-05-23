@@ -17,8 +17,8 @@ from solid2.core.object_base import OpenSCADObject
 @dataclass
 class RenderTask:
     scad_object: OpenSCADObject
-    position: P3
     filename: Path
+    position: P3 = (0.,0.,0.)
 
 
 @dataclass
