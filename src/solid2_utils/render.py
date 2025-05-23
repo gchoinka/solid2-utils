@@ -8,17 +8,21 @@ import sys
 import time
 import zipfile
 from dataclasses import dataclass
+from itertools import chain, product
 from pathlib import Path
+from typing import Tuple, Iterable, List, Optional
 
-from solid2 import P3
+from solid2 import P3, scad_inline
 from solid2.core.object_base import OpenSCADObject
+
+from solid2_utils.mod import XYZ
 
 
 @dataclass
 class RenderTask:
     scad_object: OpenSCADObject
     filename: Path
-    position: P3 = (0.,0.,0.)
+    position: P3 = (0., 0., 0.)
 
 
 @dataclass
