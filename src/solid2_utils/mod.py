@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import copy
-import itertools
 from dataclasses import dataclass
-from typing import List, Tuple, Sequence, Dict, Any, Set
+from typing import List, Tuple, Sequence, Dict, Any
 
 from solid2 import P2, P3, P4
 from solid2.core.object_base import OpenSCADObject
@@ -50,31 +49,12 @@ class _Ro:
 
 @dataclass
 class _Mi:
-    axis: Tuple[bool, bool, bool] = (False, False, False)
+    axis: Tuple[int, int, int] = (0, 0, 0)
 
 
 class Mod:
     def __init__(self):
         self._actions: List[_Tr | _Ro | _Mi | _Sc] = list()
-
-    def do(self, **kwargs) -> Mod:
-        dim = ["x", "y", "z"]
-        opts = ["s", "t", "r", "m"]
-        allowed: Set[str] = set(o + d for o, d in itertools.product(opts, dim))
-
-        for key, value in kwargs.items():
-            if key not in allowed:
-                raise ValueError(f"Please use only the allowed operations {allowed}!")
-            if key.startswith("t"):
-                args = {key[1]: value}
-                self.t(**args)
-            if key.startswith("r"):
-                args = {key[1]: value}
-                self.r(**args)
-            if key.startswith("m"):
-                args = {key[1]: value}
-                self.m(**args)
-        return self
 
     def s(self, *factors: XYZ, x: float | None = None, y: float | None = None,
           z: float | None = None):
@@ -142,18 +122,18 @@ class Mod:
     def sz(self, z: float | int) -> Mod:
         return self.s(z=z)
 
-    def m(self, x: bool = False, y: bool = False, z: bool = False) -> Mod:
+    def m(self, x: int = 0, y: int = 0, z: int = 0) -> Mod:
         self._actions.append(_Mi((x, y, z)))
         return self
 
     def mx(self) -> Mod:
-        return self.m(x=True)
+        return self.m(x=1)
 
     def my(self) -> Mod:
-        return self.m(y=True)
+        return self.m(y=1)
 
     def mz(self) -> Mod:
-        return self.m(z=True)
+        return self.m(z=1)
 
     def __call__(self, openscad_object: OpenSCADObject, *openscad_objects: OpenSCADObject) -> OpenSCADObject | Sequence[
         OpenSCADObject]:
@@ -188,25 +168,73 @@ class Mod:
 
 def t(*coordinates: XYZ, x: float | None = None, y: float | None = None,
       z: float | None = None) -> Mod:
-    m = Mod()
-    return m.t(*coordinates, x=x, y=y, z=z)
+    obj = Mod()
+    return obj.t(*coordinates, x=x, y=y, z=z)
+
+
+def tx(x: float) -> Mod:
+    return t(x=x)
+
+
+def ty(y: float) -> Mod:
+    return t(y=y)
+
+
+def tz(z: float) -> Mod:
+    return t(z=z)
 
 
 def r(*angles: XYZ, x: float | None = None, y: float | None = None,
       z: float | None = None) -> Mod:
-    m = Mod()
-    return m.r(*angles, x=x, y=y, z=z)
+    obj = Mod()
+    return obj.r(*angles, x=x, y=y, z=z)
+
+
+def rx(x: float) -> Mod:
+    return r(x=x)
+
+
+def ry(y: float) -> Mod:
+    return r(y=y)
+
+
+def rz(z: float) -> Mod:
+    return r(z=z)
 
 
 def s(*factors: XYZ, x: float | None = None, y: float | None = None,
       z: float | None = None) -> Mod:
-    m = Mod()
-    return m.s(*factors, x=x, y=y, z=z)
+    obj = Mod()
+    return obj.s(*factors, x=x, y=y, z=z)
 
 
-def m(x: bool = False, y: bool = False, z: bool = False) -> Mod:
-    m = Mod()
-    return m.m(x=x, y=y, z=z)
+def sx(x: float) -> Mod:
+    return s(x=x)
+
+
+def sy(y: float) -> Mod:
+    return s(y=y)
+
+
+def sz(z: float) -> Mod:
+    return s(z=z)
+
+
+def m(x: int = 0, y: int = 0, z: int = 0) -> Mod:
+    obj = Mod()
+    return obj.m(x=x, y=y, z=z)
+
+
+def mx() -> Mod:
+    return m(x=1)
+
+
+def my() -> Mod:
+    return m(y=1)
+
+
+def mz() -> Mod:
+    return m(z=1)
 
 
 class LocatedObj:

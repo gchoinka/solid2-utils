@@ -4,7 +4,7 @@ from typing import Dict, List
 from solid2 import cube, translate
 from solid2.core.object_base import OpenSCADObject
 
-from solid2_utils.mod import t, Mod
+from solid2_utils.mod import t, Mod, tx
 
 
 def convert_to_scad(result: Dict[str, OpenSCADObject]) -> Dict[str, List[str]]:
@@ -23,18 +23,17 @@ def test_mod_single():
     result["member"] = c.translate(10., 0., 0.)
     result["openscad"] = translate(10., 0., 0.)(c)
 
-    result["mod_call"] = Mod().tx(10.)(c)
-    result["mod_do"] = Mod().do(tx=10.)(c)
-    result["mod_t_x_0"] = Mod().t(x=10.)(c)
-    result["mod_t_x_1"] = Mod().t(10.)(c)
-    result["mod_t_x_2"] = Mod().t(10., 0.)(c)
-    result["mod_t_x_3"] = Mod().t(10., 0., 0.)(c)
-    result["mod_t_xyz_0"] = Mod().t(x=10., y=0., z=0.)(c)
-    result["mod_t_xyz_1"] = Mod().t(x=10., y=0.)(c)
-    result["mod_t_xyz_2"] = Mod().t(x=10.)(c)
-    result["mod_t_xyz_3"] = Mod().t(10., 0., 0.)(c)
-    result["mod_t_xyz_4"] = Mod().t([10., 0., 0.])(c)
-    result["mod_t_xyz_5"] = Mod().t((10., 0., 0.))(c)
+    result["mod_call"] = tx(10.)(c)
+    result["mod_t_x_0"] = t(x=10.)(c)
+    result["mod_t_x_1"] = t(10.)(c)
+    result["mod_t_x_2"] = t(10., 0.)(c)
+    result["mod_t_x_3"] = t(10., 0., 0.)(c)
+    result["mod_t_xyz_0"] = t(x=10., y=0., z=0.)(c)
+    result["mod_t_xyz_1"] = t(x=10., y=0.)(c)
+    result["mod_t_xyz_2"] = t(x=10.)(c)
+    result["mod_t_xyz_3"] = t(10., 0., 0.)(c)
+    result["mod_t_xyz_4"] = t([10., 0., 0.])(c)
+    result["mod_t_xyz_5"] = t((10., 0., 0.))(c)
     result["mod_t_xyz_6"] = t(x=10.)(c)
     result["mod_t_xyz_7"] = t(x=10.)(c)
 
@@ -50,11 +49,11 @@ def test_mod():
     result["member"] = c.translate(10., 0., 0.).translate(10., 0., 0.).translate(0., -5., 0.)
     result["openscad"] = translate(0., -5., 0.)(translate(10., 0., 0.)(translate(10., 0., 0.)(c)))
 
-    result["mod_init"] = Mod().tx(10.).tx(10.).ty(-5.)(c)
-    result["mod_call"] = Mod().tx(10.).tx(10.).ty(-5.)(c)
+    result["mod_init"] = tx(10.).tx(10.).ty(-5.)(c)
+    result["mod_call"] = tx(10.).tx(10.).ty(-5.)(c)
 
-    result["mod_init_1"] = t(x=10.).tx(10.).ty(-5.)(c)
-    result["mod_call_1"] = t(x=10.).tx(10.).ty(-5.)(c)
+    result["mod_init_1"] = t(10.).tx(10.).ty(-5.)(c)
+    result["mod_call_1"] = t(x=10.).t(x=10.).ty(-5.)(c)
 
     pos = t(x=10.).tx(10.).ty(-5.)
     result["mod_save_pos"] = pos(c)
@@ -68,7 +67,7 @@ def test_mod():
 def test_translate_scale_mirror():
     c: OpenSCADObject = cube([5., 5., 5.])
     result: Dict[str, OpenSCADObject] = dict()
-    result["member"] = c.translate(10., 0., 0.).scale(10., 1., 1.).mirror(True, False, False)
+    result["member"] = c.translate(10., 0., 0.).scale(10., 1., 1.).mirror(1, 0, 0)
 
     result["mod"] = t(x=10.).s(10., 1., 1.).mx()(c)
 
