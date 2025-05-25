@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass
-from typing import List, Tuple, Sequence, Dict, Any
+from typing import List, Tuple, Sequence, Dict, Any, Unpack
 
 from solid2 import P2, P3, P4
 from solid2.core.object_base import OpenSCADObject
@@ -10,18 +10,19 @@ from solid2.core.object_base import OpenSCADObject
 XYZ = P4 | P3 | P2 | Sequence[float | int] | int | float
 
 
-def mod_p3(v: XYZ, x: float | int | None = None, y: float | int | None = None, z: float | int | None = None,
-           ax: float | int = 0., ay: float | int = 0., az: float | int = 0., mx: float | int = 1., my: float | int = 1.,
-           mz: float | int = 1., a: Tuple[float | int, float | int, float | int] | float | int = 0.,
-           m: Tuple[float | int, float | int, float | int] | float | int = 1., ) -> P3:
+def mod_p3(v: P3, setx: float | int | None = None, sety: float | int | None = None, setz: float | int | None = None,
+           addx: float | int = 0., addy: float | int = 0., addz: float | int = 0., mulx: float | int = 1., muly: float | int = 1.,
+           mulz: float | int = 1., add: Tuple[float | int, float | int, float | int] | float | int = 0.,
+           mul: Tuple[float | int, float | int, float | int] | float | int = 1., ) -> P3:
+
     set_values: Tuple[float, float, float] = (
-        float(x) if x is not None else v[0], float(y) if y is not None else v[1], float(z) if z is not None else v[2])
-    _a: Tuple[float, float, float] = (float(a[0]), float(a[1]), float(a[2])) if isinstance(a, tuple) else (
-        float(a), float(a), float(a))
-    _m: Tuple[float, float, float] = (float(m[0]), float(m[1]), float(m[2])) if isinstance(m, tuple) else (
-        float(m), float(m), float(m))
-    add_values = (ax + _a[0], ay + _a[1], az + _a[2])
-    mul_values = (mx * _m[0], my * _m[1], mz * _m[2])
+        float(setx) if setx is not None else v[0], float(sety) if sety is not None else v[1], float(setz) if setz is not None else v[2])
+    _a: Tuple[float, float, float] = (float(add[0]), float(add[1]), float(add[2])) if isinstance(add, tuple) else (
+        float(add), float(add), float(add))
+    _m: Tuple[float, float, float] = (float(mul[0]), float(mul[1]), float(mul[2])) if isinstance(mul, tuple) else (
+        float(mul), float(mul), float(mul))
+    add_values = (addx + _a[0], addy + _a[1], addz + _a[2])
+    mul_values = (mulx * _m[0], muly * _m[1], mulz * _m[2])
     new_v: List[float] = [vv for vv in v]
 
     for i in range(3):
@@ -30,6 +31,8 @@ def mod_p3(v: XYZ, x: float | int | None = None, y: float | int | None = None, z
         new_v[i] *= mul_values[i]
 
     return new_v[0], new_v[1], new_v[2]
+
+
 
 
 @dataclass
@@ -60,7 +63,11 @@ class Mod:
           z: float | None = None):
         if len(factors) == 1 and isinstance(factors[0], tuple | list):
             self._actions.append(_Sc(factors[0]))
-        elif len(factors) == 3 and all(isinstance(c, float | int) for c in factors):
+        elif len(factors) == 1 and isinstance(factors[0], int| float):
+            self._actions.append(_Sc((factors[0], factors[0]*0, factors[0]*0)))
+        elif len(factors) == 2 and isinstance(factors[0], int| float) and isinstance(factors[1], int| float):
+            self._actions.append(_Sc((factors[0], factors[1], factors[0]*0)))
+        elif len(factors) == 3 and isinstance(factors[0], int| float) and isinstance(factors[1], int| float) and isinstance(factors[2], int| float):
             self._actions.append(_Sc((factors[0], factors[1], factors[2])))
         elif any(c is not None for c in (x, y, z)):
             self._actions.append(_Sc([c if c is not None else 1. for c in (x, y, z)]))
@@ -68,15 +75,16 @@ class Mod:
             raise ValueError("Either factors has to be non None or x,y,z have to be not None")
         return self
 
-    def t(self, *coordinates: XYZ | float, x: float | None = None, y: float | None = None,
+    def t(self, *coordinates: XYZ, x: float | None = None, y: float | None = None,
           z: float | None = None) -> Mod:
         if len(coordinates) == 1 and isinstance(coordinates[0], tuple | list):
             self._actions.append(_Tr(coordinates[0]))
-        elif len(coordinates) > 0 and all(isinstance(c, float | int) for c in coordinates):
-            mat = [0., 0., 0.]
-            for i in range(len(coordinates)):
-                mat[i] = coordinates[i]
-            self._actions.append(_Tr(mat))
+        elif len(coordinates) == 1 and isinstance(coordinates[0], int| float):
+            self._actions.append(_Tr([coordinates[0], coordinates[0]*0, coordinates[0]*0]))
+        elif len(coordinates) == 2 and isinstance(coordinates[0], int| float) and isinstance(coordinates[1], int| float) :
+            self._actions.append(_Tr([coordinates[0], coordinates[1], coordinates[0]*0]))
+        elif len(coordinates) == 3 and isinstance(coordinates[0], int| float) and isinstance(coordinates[1], int| float) and isinstance(coordinates[2], int| float):
+            self._actions.append(_Tr([coordinates[0], coordinates[1], coordinates[2]]))
         elif any(c is not None for c in (x, y, z)):
             self._actions.append(_Tr([c if c is not None else 0. for c in (x, y, z)]))
         else:
@@ -87,7 +95,11 @@ class Mod:
           z: float | None = None) -> Mod:
         if len(angles) == 1 and isinstance(angles[0], tuple | list):
             self._actions.append(_Ro(angles[0]))
-        elif len(angles) == 3 and all(isinstance(c, float | int) for c in angles):
+        elif len(angles) == 1 and isinstance(angles[0], int | float):
+            self._actions.append(_Ro((angles[0], angles[0]*0, angles[0]*0)))
+        elif len(angles) == 2 and isinstance(angles[0], int| float) and isinstance(angles[1], int| float):
+            self._actions.append(_Ro((angles[0], angles[1], angles[0]*0)))
+        elif len(angles) == 3 and isinstance(angles[0], int| float) and isinstance(angles[1], int| float) and isinstance(angles[2], int| float):
             self._actions.append(_Ro((angles[0], angles[1], angles[2])))
         elif any(c is not None for c in (x, y, z)):
             self._actions.append(_Ro([c if c is not None else 0. for c in (x, y, z)]))
@@ -135,26 +147,19 @@ class Mod:
     def mz(self) -> Mod:
         return self.m(z=1)
 
-    def __call__(self, openscad_object: OpenSCADObject, *openscad_objects: OpenSCADObject) -> OpenSCADObject | Sequence[
-        OpenSCADObject]:
-        result: List[OpenSCADObject] = list()
-        for obj in [openscad_object, *openscad_objects]:
-            for action in self._actions:
-                if isinstance(action, _Tr):
-                    obj = obj.translate(action.coordinates)
-                elif isinstance(action, _Ro):
-                    obj = obj.rotate(action.angles)
-                elif isinstance(action, _Sc):
-                    obj = obj.scale(action.factor)
-                elif isinstance(action, _Mi):
-                    obj = obj.mirror(action.axis)
-                else:
-                    raise ValueError("Unexpected type for action")
-            result.append(obj)
-        if len(result) == 1:
-            return result[0]
-        else:
-            return result
+    def __call__(self, openscad_object: OpenSCADObject) -> OpenSCADObject:
+        for action in self._actions:
+            if isinstance(action, _Tr):
+                openscad_object = openscad_object.translate(action.coordinates)
+            elif isinstance(action, _Ro):
+                openscad_object = openscad_object.rotate(action.angles)
+            elif isinstance(action, _Sc):
+                openscad_object = openscad_object.scale(action.factor)
+            elif isinstance(action, _Mi):
+                openscad_object = openscad_object.mirror(action.axis)
+            else:
+                raise ValueError("Unexpected type for action")
+        return openscad_object
 
     def __add__(self, other: Mod) -> Mod:
         new_instance = copy.deepcopy(self)
@@ -237,52 +242,52 @@ def mz() -> Mod:
     return m(z=1)
 
 
-class LocatedObj:
-
-    def __init__(self, objf, obj_args: List[Any], obj_kwargs: Dict[Any, Any], size: XYZ, pos: Mod | None = None):
-        self.obj = objf(*obj_args, **obj_kwargs)
-        self.pos = pos
-        self.size = size
-
-    def __getitem__(self, index: int) -> float:
-        return self.size[index]
-
-    @property
-    def x(self) -> float:
-        return self.size[0]
-
-    @x.setter
-    def x(self, val: float) -> None:
-        self.size = mod_p3(self.size, x=val)
-
-    @property
-    def y(self) -> float:
-        return self.size[1]
-
-    @y.setter
-    def y(self, val: float) -> None:
-        self.size = mod_p3(self.size, y=val)
-
-    @property
-    def z(self) -> float:
-        return self.size[2]
-
-    @z.setter
-    def z(self, val: float) -> None:
-        self.size = mod_p3(self.size, z=val)
-
-    def __add__(self, other) -> OpenSCADObject:
-        if isinstance(other, OpenSCADObject):
-            return self.obj + other
-        elif isinstance(other, LocatedObj):
-            return self.obj + other.obj
-        else:
-            raise ValueError("Plus OP only implemented for OpenSCADObject or LocatedObj")
-
-    def __sub__(self, other) -> OpenSCADObject:
-        if isinstance(other, OpenSCADObject):
-            return self.obj - other
-        elif isinstance(other, LocatedObj):
-            return self.obj - other.obj
-        else:
-            raise ValueError("Minus OP only implemented for OpenSCADObject or LocatedObj")
+# class LocatedObj:
+#
+#     def __init__(self, objf, obj_args: List[Any], obj_kwargs: Dict[Any, Any], size: P3, pos: Mod | None = None):
+#         self.obj = objf(*obj_args, **obj_kwargs)
+#         self.pos = pos
+#         self.size = size
+#
+#     def __getitem__(self, index: int) -> float:
+#         return self.size[index]
+#
+#     @property
+#     def x(self) -> float:
+#         return self.size[0]
+#
+#     @x.setter
+#     def x(self, val: float) -> None:
+#         self.size = mod_p3(self.size, x=val)
+#
+#     @property
+#     def y(self) -> float:
+#         return self.size[1]
+#
+#     @y.setter
+#     def y(self, val: float) -> None:
+#         self.size = mod_p3(self.size, y=val)
+#
+#     @property
+#     def z(self) -> float:
+#         return self.size[2]
+#
+#     @z.setter
+#     def z(self, val: float) -> None:
+#         self.size = mod_p3(self.size, z=val)
+#
+#     def __add__(self, other) -> OpenSCADObject:
+#         if isinstance(other, OpenSCADObject):
+#             return self.obj + other
+#         elif isinstance(other, LocatedObj):
+#             return self.obj + other.obj
+#         else:
+#             raise ValueError("Plus OP only implemented for OpenSCADObject or LocatedObj")
+#
+#     def __sub__(self, other) -> OpenSCADObject:
+#         if isinstance(other, OpenSCADObject):
+#             return self.obj - other
+#         elif isinstance(other, LocatedObj):
+#             return self.obj - other.obj
+#         else:
+#             raise ValueError("Minus OP only implemented for OpenSCADObject or LocatedObj")

@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import multiprocessing
 import sys
 import time
 import zipfile
@@ -143,7 +144,7 @@ def save_to_file(output_scad_basename: Path, openscad_bin: Path | None, render_t
     if all_obj is not None:
         all_obj.save_as_scad(scad_filename.absolute().as_posix())
 
-    with Pool(max(os.cpu_count() - 2, 1)) as pool:
+    with Pool(max(multiprocessing.cpu_count() - 2, 1)) as pool:
         for filename, elapsed in pool.map(_render_to_file, render_tasks_args):
             logging.info(f"Saved in {elapsed:.2f}s {filename.absolute().as_posix()}")
 
