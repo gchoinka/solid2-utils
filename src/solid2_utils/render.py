@@ -158,7 +158,7 @@ def solid2_utils_cli(prog: str, description: str, default_output_path: Path):
     parser.add_argument('--include_filter_regex', type=str)
     parser.add_argument('--build_dir', type=str)
 
-    args = parser.parse_known_args()
+    args, unknown_args = parser.parse_known_args()
 
     output_path = default_output_path if args.build_dir is None else Path(args.build_dir)
     if not os.path.exists(output_path):
@@ -177,4 +177,4 @@ def solid2_utils_cli(prog: str, description: str, default_output_path: Path):
 
     if args.skip_rendering:
         openscad_bin = None
-    return args, output_path, openscad_bin
+    return args, output_path, openscad_bin, unknown_args
