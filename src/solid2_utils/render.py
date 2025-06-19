@@ -152,12 +152,13 @@ def save_to_file(output_scad_basename: Path, openscad_bin: Path | None, render_t
 def solid2_utils_cli(prog: str, description: str, default_output_path: Path):
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--skip_rendering', action='store_true')
+    parser.add_argument('--preview', action='store_true')
     parser.add_argument('--verbose', action='store_true')
     parser.add_argument('--openscad_bin', type=str)
     parser.add_argument('--include_filter_regex', type=str)
     parser.add_argument('--build_dir', type=str)
 
-    args = parser.parse_args()
+    args = parser.parse_known_args()
 
     output_path = default_output_path if args.build_dir is None else Path(args.build_dir)
     if not os.path.exists(output_path):
