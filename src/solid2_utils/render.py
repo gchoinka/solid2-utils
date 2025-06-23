@@ -105,7 +105,7 @@ def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask], 
 
     file_types = [".3mf", ".png"] if file_types is None else file_types
 
-    render_tasks_args: List[_RenderTaskArgs] = [_RenderTaskArgs(t, file_types=file_types, openscad_bin=openscad_bin, verbose=verbose) for t in render_tasks_list]
+    render_tasks_args: List[_RenderTaskArgs] = [_RenderTaskArgs(t.scad_object, t.filename, file_types=file_types, openscad_bin=openscad_bin, verbose=verbose) for t in render_tasks_list]
     if include_filter_regex is not None:
         render_tasks_args = [t for t in render_tasks_args if include_filter_regex.search(t.filename.as_posix())]
 
