@@ -28,14 +28,9 @@ class RenderTask:
 class _RenderTaskArgs:
     scad_object: OpenSCADObject
     filename: Path
-    openscad_bin: Path | None
-    verbose: bool
-
-    def __init__(self, task: RenderTask, openscad_bin: Path | None, verbose: bool) -> None:
-        self.scad_object = task.scad_object
-        self.filename = task.filename
-        self.openscad_bin = openscad_bin
-        self.verbose = verbose
+    file_types:List[str]
+    openscad_bin: Path | None = None
+    verbose: bool = False
 
 
 def _render_to_file(task: _RenderTaskArgs) -> Tuple[Path, float]:
@@ -46,7 +41,7 @@ def _render_to_file(task: _RenderTaskArgs) -> Tuple[Path, float]:
     extra_cli_args = ["--backend", "Manifold"] if manifold else []
     if task.openscad_bin is not None:
         out_filenames = tuple(chain.from_iterable(
-            product(("-o",), (task.filename.with_suffix(ext).absolute().as_posix() for ext in (".3mf", ".png")))))
+            product(("-o",), (task.filename.with_suffix(ext).absolute().as_posix() for ext in task.file_types))))
         openscad_cli_args = [task.openscad_bin, *out_filenames, *extra_cli_args, "--colorscheme", "BeforeDawn",
                              scad_filename]
         return_code = None
@@ -57,7 +52,8 @@ def _render_to_file(task: _RenderTaskArgs) -> Tuple[Path, float]:
             return_code = subprocess.run(openscad_cli_args, capture_output=True)
             return_code.check_returncode()
             elapsed = (time.time() - start)
-            set_model_name(task.filename.with_suffix(".3mf"), task.filename.name)
+            if task.filename.with_suffix(".3mf").exists():
+                set_model_name(task.filename.with_suffix(".3mf"), task.filename.name)
         except subprocess.CalledProcessError as ex:
             logging.info(f"Saving {scad_filename}")
             logging.error(ex)
@@ -93,7 +89,7 @@ def set_model_name(filename: Path, name: str) -> None:
     shutil.move(new_filename, old_filename)
 
 
-def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask],
+def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask], file_types:List[str] | None= None,
                  include_filter_regex: re.Pattern[str] | None = None, remove_duplicates=True,
                  verbose: bool = False) -> None:
     if verbose:
@@ -107,7 +103,9 @@ def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask],
                             zip((r.filename for r in render_tasks), range(len(render_tasks_list)))}
         render_tasks_list = [render_tasks_list[idx] for idx in unique_scads_idx.values()]
 
-    render_tasks_args: List[_RenderTaskArgs] = [_RenderTaskArgs(t, openscad_bin, verbose) for t in render_tasks_list]
+    file_types = [".3mf", ".png"] if file_types is None else file_types
+
+    render_tasks_args: List[_RenderTaskArgs] = [_RenderTaskArgs(t, file_types=file_types, openscad_bin=openscad_bin, verbose=verbose) for t in render_tasks_list]
     if include_filter_regex is not None:
         render_tasks_args = [t for t in render_tasks_args if include_filter_regex.search(t.filename.as_posix())]
 
