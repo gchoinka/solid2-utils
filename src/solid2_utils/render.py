@@ -144,6 +144,4 @@ def solid2_utils_cli(prog: str, description: str, default_output_path: Path):
             openscad_bin = Path("C:/Program Files/Openscad/openscad.exe").absolute()
             logging.warn(f"Found openscad in default folder {openscad_bin.absolute()}")
 
-    if args.skip_rendering:
-        openscad_bin = None
     return args, output_path, openscad_bin, unknown_args
