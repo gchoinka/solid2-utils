@@ -3,9 +3,10 @@ import logging
 from functools import partial
 from pathlib import Path
 from typing import Callable, Iterable, Tuple, Dict, List
-from solid2.core.object_base import OpenSCADObject
 
 from solid2 import import_stl
+from solid2.core.object_base import OpenSCADObject
+
 from solid2_utils.render import RenderTask, save_to_file
 
 OpenSCADCacheFN = Callable[[Iterable[Tuple[OpenSCADObject, Path]]], Dict[str, OpenSCADObject]]
@@ -15,19 +16,24 @@ def default_no_cache_to_stl(obj_list: Iterable[Tuple[OpenSCADObject, Path]]) -> 
     return {str(key.as_posix()): obj for obj, key in obj_list}
 
 
-cache_to_stl = default_no_cache_to_stl
+_cache_to_stl = default_no_cache_to_stl
+
+
+def cache_to_stl(obj_list: Iterable[Tuple[OpenSCADObject, Path]]) -> Dict[str, OpenSCADObject]:
+    return _cache_to_stl(obj_list)
 
 
 def set_cache_to_stl_cache_function(cache_fn: OpenSCADCacheFN) -> OpenSCADCacheFN:
-    global cache_to_stl
-    old = cache_to_stl
-    cache_to_stl = cache_fn
+    global _cache_to_stl
+    old = _cache_to_stl
+    _cache_to_stl = cache_fn
     return old
 
 
-def set_cache_to_stl_setting(openscad_bin:Path, cache_dir:Path) -> OpenSCADCacheFN:
+def set_cache_to_stl_setting(openscad_bin: Path, cache_dir: Path) -> OpenSCADCacheFN:
     cache_fn = partial(cache_to_stl_advanced, openscad_bin=openscad_bin, build_dir=cache_dir)
     return set_cache_to_stl_cache_function(cache_fn)
+
 
 def cache_to_stl_advanced(obj_list: Iterable[Tuple[OpenSCADObject, Path]], build_dir: Path, openscad_bin: Path) -> Dict[
     str, OpenSCADObject]:
