@@ -159,7 +159,7 @@ class Mod:
         return self.m(z=1)
 
     def debug(self, flag:bool=True):
-        self._actions.append(_Debug(flag))
+        return self._actions.append(_Debug(flag))
 
     def __call__(self, openscad_object: OpenSCADObject) -> OpenSCADObject:
         for action in self._actions:
