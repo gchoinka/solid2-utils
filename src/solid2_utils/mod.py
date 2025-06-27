@@ -32,8 +32,15 @@ def mod_p3(v: P3, setx: float | int | None = None, sety: float | int | None = No
 
     return new_v[0], new_v[1], new_v[2]
 
+class _ModP3Action:
+    pass
 
 
+
+
+class ModP3:
+    def __init__(self, *args:_ModP3Action):
+        pass
 
 @dataclass
 class _Tr:
@@ -54,10 +61,14 @@ class _Ro:
 class _Mi:
     axis: Tuple[int, int, int] = (0, 0, 0)
 
+@dataclass
+class _Debug:
+    flag: bool = True
+
 
 class Mod:
     def __init__(self):
-        self._actions: List[_Tr | _Ro | _Mi | _Sc] = list()
+        self._actions: List[_Tr | _Ro | _Mi | _Sc| _Debug] = list()
 
     def s(self, *factors: XYZ, x: float | None = None, y: float | None = None,
           z: float | None = None):
@@ -147,6 +158,9 @@ class Mod:
     def mz(self) -> Mod:
         return self.m(z=1)
 
+    def debug(self, flag:bool=True):
+        self._actions.append(_Debug(flag))
+
     def __call__(self, openscad_object: OpenSCADObject) -> OpenSCADObject:
         for action in self._actions:
             if isinstance(action, _Tr):
@@ -157,6 +171,9 @@ class Mod:
                 openscad_object = openscad_object.scale(action.factor)
             elif isinstance(action, _Mi):
                 openscad_object = openscad_object.mirror(action.axis)
+            elif isinstance(action, _Debug):
+                if action.flag:
+                    openscad_object = openscad_object.debug()
             else:
                 raise ValueError("Unexpected type for action")
         return openscad_object
