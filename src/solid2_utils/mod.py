@@ -84,7 +84,7 @@ class Mod:
             self._actions.append(_Sc([c if c is not None else 1. for c in (x, y, z)]))
         else:
             raise ValueError("Either factors has to be non None or x,y,z have to be not None")
-        return copy.deepcopy(self)
+        return self
 
     def t(self, *coordinates: XYZ, x: float | None = None, y: float | None = None,
           z: float | None = None) -> Mod:
@@ -100,7 +100,7 @@ class Mod:
             self._actions.append(_Tr([c if c is not None else 0. for c in (x, y, z)]))
         else:
             raise ValueError("Either coordinates has to be non None or x,y,z have to be not None")
-        return copy.deepcopy(self)
+        return self
 
     def r(self, *angles: XYZ, x: float | None = None, y: float | None = None,
           z: float | None = None) -> Mod:
@@ -116,7 +116,7 @@ class Mod:
             self._actions.append(_Ro([c if c is not None else 0. for c in (x, y, z)]))
         else:
             raise ValueError("Either angles has to be non None or x,y,z have to be not None")
-        return copy.deepcopy(self)
+        return self
 
     def tx(self, x: float | int) -> Mod:
         return self.t(x=x)
@@ -147,7 +147,7 @@ class Mod:
 
     def m(self, x: int = 0, y: int = 0, z: int = 0) -> Mod:
         self._actions.append(_Mi((x, y, z)))
-        return copy.deepcopy(self)
+        return self
 
     def mx(self) -> Mod:
         return self.m(x=1)
@@ -160,7 +160,7 @@ class Mod:
 
     def debug(self, flag:bool=True) -> Mod:
         self._actions.append(_Debug(flag))
-        return copy.deepcopy(self)
+        return self
 
     def __call__(self, openscad_object: OpenSCADObject) -> OpenSCADObject:
         for action in self._actions:
