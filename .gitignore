@@ -1,0 +1,4 @@
+.idea/*
+uv.lock
+__pycache__
+*.scad

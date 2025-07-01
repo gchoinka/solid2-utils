@@ -1,0 +1,27 @@
+[project]
+name = "solid2-utils"
+version = "1.0.0"
+description = "Helper packages for solidpython2"
+license = "BSD-2-Clause"
+readme = "README.md"
+authors = [
+    { name = "Gerard Choinka", email = "gerard.choinka+github@gmail.com" }
+]
+homepage = "https://github.com/gchoinka/solid2-utils"
+repository = "https://github.com/gchoinka/solid2-utils"
+
+requires-python = ">=3.14"
+dependencies = [
+    "solidpython2>=2.1.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.401",
+    "pytest>=8.3.5",
+    "pytest-icdiff>=0.9",
+]
