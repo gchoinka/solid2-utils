@@ -48,16 +48,16 @@ def cache_to_stl_advanced(obj_list: Iterable[Tuple[OpenSCADObject, Path]], build
         else:
             logging.info(f"Found {rts_all[n].filename} im cache")
 
-    for rts in rts_filtered:
-        filename = rts.filename.as_posix()[:-32]
-        for suffix in (".stl", ".scad"):
-            filename_last = Path(filename + "last").with_suffix(suffix)
-            if filename_last.exists():
-                filename_last.unlink()
-            try:
-                filename_last.symlink_to(rts.filename.with_suffix(suffix))
-            except OSError as ex:
-                shutil.copy(rts.filename.with_suffix(suffix), filename_last)
     if len(rts_filtered) > 0:
         save_to_file(openscad_bin, rts_filtered, file_types=[".stl"])
+        for rts in rts_filtered:
+            filename = rts.filename.as_posix()[:-32]
+            for suffix in (".stl", ".scad"):
+                filename_last = Path(filename + "last").with_suffix(suffix)
+                if filename_last.exists():
+                    filename_last.unlink()
+                try:
+                    filename_last.symlink_to(rts.filename.with_suffix(suffix))
+                except OSError as ex:
+                    shutil.copy(rts.filename.with_suffix(suffix), filename_last)
     return {str(r.filename.stem[:-33]): import_stl(r.filename.with_suffix(".stl")) for r in rts_all}
