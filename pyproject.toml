@@ -1,6 +1,6 @@
 [project]
 name = "solid2-utils"
-version = "1.0.0"
+version = "1.0.1"
 description = "Helper packages for solidpython2"
 license = "BSD-2-Clause"
 readme = "README.md"

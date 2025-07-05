@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import shutil
 from functools import partial
 from pathlib import Path
 from typing import Callable, Iterable, Tuple, Dict, List
@@ -53,7 +54,10 @@ def cache_to_stl_advanced(obj_list: Iterable[Tuple[OpenSCADObject, Path]], build
             filename_last = Path(filename + "last").with_suffix(suffix)
             if filename_last.exists():
                 filename_last.unlink()
-            filename_last.symlink_to(rts.filename.with_suffix(suffix))
+            try:
+                filename_last.symlink_to(rts.filename.with_suffix(suffix))
+            except OSError as ex:
+                shutil.copy(rts.filename.with_suffix(suffix), filename_last)
     if len(rts_filtered) > 0:
         save_to_file(openscad_bin, rts_filtered, file_types=[".stl"])
     return {str(r.filename.stem[:-33]): import_stl(r.filename.with_suffix(".stl")) for r in rts_all}
