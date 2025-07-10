@@ -11,24 +11,34 @@ import zipfile
 from dataclasses import dataclass
 from itertools import chain, product
 from pathlib import Path
-from typing import Tuple, Iterable, List
+from typing import Tuple, Iterable, List, Generator
 
-from solid2 import P3
+from solid2 import P3, scad_inline, union
 from solid2.core.object_base import OpenSCADObject
 
 
 @dataclass
 class RenderTask:
     scad_object: OpenSCADObject
-    filename: Path
+    filename: os.PathLike[str]
     position: P3 = (0., 0., 0.)
+
+
+def set_output_dir(output_path: Path, render_task: Iterable[RenderTask]) -> Generator[RenderTask, None, None]:
+    for rt in render_task:
+        yield RenderTask(rt.scad_object, output_path.joinpath(rt.filename), rt.position)
+
+
+def set_render_task_fn(fn: int, render_task: Iterable[RenderTask]) -> Generator[RenderTask, None, None]:
+    for rt in render_task:
+        yield RenderTask(union()(scad_inline(f"$fn={fn};\n"), rt.scad_object), rt.filename, rt.position)
 
 
 @dataclass
 class _RenderTaskArgs:
     scad_object: OpenSCADObject
     filename: Path
-    file_types:List[str]
+    file_types: List[str]
     openscad_bin: Path | None = None
     verbose: bool = False
 
@@ -89,7 +99,7 @@ def set_model_name(filename: Path, name: str) -> None:
     shutil.move(new_filename, old_filename)
 
 
-def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask], file_types:List[str] | None= None,
+def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask], file_types: List[str] | None = None,
                  include_filter_regex: re.Pattern[str] | None = None, remove_duplicates=True,
                  verbose: bool = False) -> None:
     if verbose:
@@ -105,7 +115,9 @@ def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask], 
 
     file_types = [".3mf", ".png"] if file_types is None else file_types
 
-    render_tasks_args: List[_RenderTaskArgs] = [_RenderTaskArgs(t.scad_object, t.filename, file_types=file_types, openscad_bin=openscad_bin, verbose=verbose) for t in render_tasks_list]
+    render_tasks_args: List[_RenderTaskArgs] = [
+        _RenderTaskArgs(t.scad_object, Path(t.filename), file_types=file_types, openscad_bin=openscad_bin,
+                        verbose=verbose) for t in render_tasks_list]
     if include_filter_regex is not None:
         render_tasks_args = [t for t in render_tasks_args if include_filter_regex.search(t.filename.as_posix())]
 
