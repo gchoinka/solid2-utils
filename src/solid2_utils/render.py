@@ -56,7 +56,7 @@ def _wslpath(path: str | Path, convert: bool = False) -> str:
 
 
 def _render_to_file(task: _RenderTaskArgs) -> Tuple[Path, float]:
-    fix_path = functools.partial(_wslpath, convert=task.openscad_bin.startswith("wsl"))
+    fix_path = functools.partial(_wslpath, convert=task.openscad_bin.startswith("wsl") if task.openscad_bin is not None else False)
     scad_filename = task.filename.with_suffix(".scad").absolute().as_posix()
     task.scad_object.save_as_scad(scad_filename)
     elapsed = 0.0
