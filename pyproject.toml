@@ -1,6 +1,6 @@
 [project]
 name = "solid2-utils"
-version = "1.0.3"
+version = "1.0.4"
 description = "Helper packages for solidpython2"
 license = "BSD-2-Clause"
 readme = "README.md"
@@ -10,7 +10,7 @@ authors = [
 homepage = "https://github.com/gchoinka/solid2-utils"
 repository = "https://github.com/gchoinka/solid2-utils"
 
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "solidpython2>=2.1.1",
 ]
