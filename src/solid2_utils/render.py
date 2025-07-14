@@ -1,4 +1,5 @@
 import argparse
+import functools
 import logging
 import multiprocessing
 import os
@@ -39,21 +40,32 @@ class _RenderTaskArgs:
     scad_object: OpenSCADObject
     filename: Path
     file_types: List[str]
-    openscad_bin: Path | None = None
+    openscad_bin: str | None = None
     verbose: bool = False
 
 
+def _wslpath(path: str, convert: bool = False) -> str:
+    if not convert:
+        return path
+    return subprocess.run(["wsl", "wslpath", path], capture_output=True, check=False).stdout.decode().strip()
+
+
 def _render_to_file(task: _RenderTaskArgs) -> Tuple[Path, float]:
+    fix_path = functools.partial(_wslpath, convert=task.openscad_bin.startswith("wsl"))
     scad_filename = task.filename.with_suffix(".scad").absolute().as_posix()
     task.scad_object.save_as_scad(scad_filename)
     elapsed = 0.0
     manifold = True
     extra_cli_args = ["--backend", "Manifold"] if manifold else []
     if task.openscad_bin is not None:
-        out_filenames = tuple(chain.from_iterable(
-            product(("-o",), (task.filename.with_suffix(ext).absolute().as_posix() for ext in task.file_types))))
-        openscad_cli_args = [task.openscad_bin, *out_filenames, *extra_cli_args, "--colorscheme", "BeforeDawn",
-                             scad_filename]
+        out_filenames = tuple(chain.from_iterable(product(("-o",), (
+            fix_path(task.filename.with_suffix(ext).absolute().as_posix()) for ext in task.file_types))))
+        openscad_bin: List[str] = [task.openscad_bin]
+        if task.openscad_bin.startswith("wsl"):
+            openscad_bin = task.openscad_bin.split(" ", 1)
+
+        openscad_cli_args = [*openscad_bin, *out_filenames, *extra_cli_args, "--colorscheme", "BeforeDawn",
+                             fix_path(scad_filename)]
         return_code = None
         try:
             logging.info(f"Running [{",".join(f'"{s}"' for s in openscad_cli_args)}]")
@@ -99,7 +111,7 @@ def set_model_name(filename: Path, name: str) -> None:
     shutil.move(new_filename, old_filename)
 
 
-def save_to_file(openscad_bin: Path | None, render_tasks: Iterable[RenderTask], file_types: List[str] | None = None,
+def save_to_file(openscad_bin: str | None, render_tasks: Iterable[RenderTask], file_types: List[str] | None = None,
                  include_filter_regex: re.Pattern[str] | None = None, remove_duplicates=True,
                  verbose: bool = False) -> None:
     if verbose:
@@ -139,19 +151,25 @@ def solid2_utils_cli(prog: str, description: str, default_output_path: Path):
 
     args, unknown_args = parser.parse_known_args()
 
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
     output_path = default_output_path if args.build_dir is None else Path(args.build_dir)
     if not os.path.exists(output_path):
+        logging.info(f'Output dir "{output_path}" did not exist, trying to create it now')
         os.makedirs(output_path)
 
-    if args.openscad_bin is not None:
-        openscad_bin: Path | None = Path(args.openscad_bin)
-    else:
-        p = shutil.which("openscad")
-        openscad_bin: Path | None = Path(p) if p is not None else None
+    openscad_bin_candidates = [args.openscad_bin, shutil.which("openscad-nightly"), shutil.which("openscad"), ]
+    if len(shutil.which("wsl")) > 0:
+        for c in ("openscad-nightly", "openscad"):
+            f = subprocess.run(["wsl", "bash", "-l", "-c", f"which {c}"], capture_output=True,
+                               check=False).stdout.decode().strip()
+            if len(f) > 0:
+                openscad_bin_candidates.append(f"wsl {f}")
+
+    openscad_bin: str | None = next((p for p in openscad_bin_candidates if p is not None), None)
+
     if openscad_bin is None and not args.skip_rendering:
         logging.warn("Didn't found openscad in PATH environment variable, skipping rendering 3mf/stl/png!")
-        if Path("C:/Program Files/Openscad/openscad.exe").exists():
-            openscad_bin = Path("C:/Program Files/Openscad/openscad.exe").absolute()
-            logging.warn(f"Found openscad in default folder {openscad_bin.absolute()}")
 
     return args, output_path, openscad_bin, unknown_args
