@@ -44,10 +44,15 @@ class _RenderTaskArgs:
     verbose: bool = False
 
 
-def _wslpath(path: str, convert: bool = False) -> str:
+def _wslpath(path: str | Path, convert: bool = False) -> str:
     if not convert:
         return path
-    return subprocess.run(["wsl", "wslpath", path], capture_output=True, check=False).stdout.decode().strip()
+    if isinstance(path, Path):
+        path = str(path.absolute().as_posix())
+    to_run = ["wsl", "wslpath", path]
+    out = subprocess.run(to_run, capture_output=True, check=False).stdout.decode().strip()
+    logging.info(f"{to_run=} {out=}")
+    return out
 
 
 def _render_to_file(task: _RenderTaskArgs) -> Tuple[Path, float]:
