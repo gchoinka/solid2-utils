@@ -165,7 +165,8 @@ def solid2_utils_cli(prog: str, description: str, default_output_path: Path):
         os.makedirs(output_path)
 
     openscad_bin_candidates = [args.openscad_bin, shutil.which("openscad-nightly"), shutil.which("openscad"), ]
-    if len(shutil.which("wsl")) > 0:
+    is_wsl = shutil.which("wsl")
+    if is_wsl is not None and len(is_wsl) > 0:
         for c in ("openscad-nightly", "openscad"):
             f = subprocess.run(["wsl", "bash", "-l", "-c", f"which {c}"], capture_output=True,
                                check=False).stdout.decode().strip()
