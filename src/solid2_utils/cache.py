@@ -65,9 +65,5 @@ def cache_to_stl_advanced(obj_list: Iterable[Tuple[OpenSCADObject, Path]], build
                         shutil.copy(Path(rts.filename).with_suffix(suffix), filename_last)
                     except OSError as ex:
                         pass
-    for r in rts_all:
-        print(openscad_bin)
-        print(Path(r.filename).with_suffix(".stl"))
-        print(fix_path(Path(r.filename).with_suffix(".stl")))
 
     return {str(Path(r.filename).stem[:-33]): import_stl(fix_path(Path(r.filename).with_suffix(".stl"))) for r in rts_all}
