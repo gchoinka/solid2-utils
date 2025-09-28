@@ -16,11 +16,12 @@ from typing import Tuple, Iterable, List, Generator
 
 from solid2 import P3, scad_inline, union
 from solid2.core.object_base import OpenSCADObject
+from solid2.extensions.bosl2.bosl2_base import Bosl2Base
 
 
 @dataclass
 class RenderTask:
-    scad_object: OpenSCADObject
+    scad_object: OpenSCADObject | Bosl2Base
     filename: os.PathLike[str]
     position: P3 = (0., 0., 0.)
 
@@ -37,7 +38,7 @@ def set_render_task_fn(fn: int, render_task: Iterable[RenderTask]) -> Generator[
 
 @dataclass
 class _RenderTaskArgs:
-    scad_object: OpenSCADObject
+    scad_object: OpenSCADObject | Bosl2Base
     filename: Path
     file_types: List[str]
     openscad_bin: str | None = None

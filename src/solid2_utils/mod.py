@@ -6,6 +6,7 @@ from typing import List, Tuple, Sequence
 
 from solid2 import P2, P3, P4
 from solid2.core.object_base import OpenSCADObject
+from solid2.extensions.bosl2.bosl2_base import Bosl2Base
 
 XYZ = P4 | P3 | P2 | Sequence[float | int] | int | float
 
@@ -171,7 +172,7 @@ class Mod:
     def clone(self) -> Mod:
         return copy.deepcopy(self)
 
-    def __call__(self, openscad_object: OpenSCADObject) -> OpenSCADObject:
+    def __call__(self, openscad_object: OpenSCADObject | Bosl2Base) -> OpenSCADObject | Bosl2Base:
         for action in self._actions:
             if isinstance(action, _Tr):
                 openscad_object = openscad_object.translate(action.coordinates)

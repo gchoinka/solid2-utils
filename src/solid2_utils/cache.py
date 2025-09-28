@@ -8,6 +8,7 @@ from typing import Callable, Iterable, Tuple, Dict, List
 
 from solid2 import import_stl
 from solid2.core.object_base import OpenSCADObject
+from solid2.extensions.bosl2.bosl2_base import Bosl2Base
 
 from solid2_utils.render import RenderTask, save_to_file, _wslpath
 
@@ -37,8 +38,8 @@ def set_cache_to_stl_setting(openscad_bin: str, cache_dir: Path) -> OpenSCADCach
     return set_cache_to_stl_cache_function(cache_fn)
 
 
-def cache_to_stl_advanced(obj_list: Iterable[Tuple[OpenSCADObject, Path]], build_dir: Path, openscad_bin: str) -> Dict[
-    str, OpenSCADObject]:
+def cache_to_stl_advanced(obj_list: Iterable[Tuple[OpenSCADObject | Bosl2Base, Path]], build_dir: Path, openscad_bin: str) -> Dict[
+    str, OpenSCADObject | Bosl2Base]:
     fix_path = functools.partial(_wslpath, convert=openscad_bin.startswith("wsl"))
     rts_all = [RenderTask(obj, build_dir.joinpath(name)) for obj, name in obj_list]
     rts_filtered: List[RenderTask] = list()
